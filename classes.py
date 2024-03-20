@@ -11,7 +11,9 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
-
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service as ChromeService
+from webdriver_manager.chrome import ChromeDriverManager
 
 
 class Locators:
@@ -51,7 +53,14 @@ class ChallengeController:
         Initial parameters
         """
         self.url = url
-        self.driver = webdriver.Chrome()
+        self.chrome_options = Options()
+        self.chrome_options.add_argument("--no-sandbox")
+        self.chrome_options.add_argument("--headless")
+        self.chrome_options.add_argument("--disable-dev-shm-usage")
+        self.driver = webdriver.Chrome(
+            service=ChromeService(ChromeDriverManager().install()),
+            options=self.chrome_options,
+        )
         self.locators = Locators()
         self.df = None
 
@@ -65,7 +74,7 @@ class ChallengeController:
         """
         Method to downlaod the file
         """
-        #Wait for button to exist, then, click on it
+        # Wait for button to exist, then, click on it
         WebDriverWait(self.driver, 10).until(
             EC.element_to_be_clickable((By.XPATH, self.locators.btn_file_download))
         )
@@ -77,22 +86,10 @@ class ChallengeController:
         """
         Method to read the file
         """
-        for _ in range(0, 30):
-            for files in os.listdir(Path.home() / "Downloads"):
-                if files.startswith("challenge") and files.endswith(".xlsx"):
-                    self.df = pd.read_excel(Path.home() / f"Downloads/{files}")
-                    os.remove(Path.home() / f"Downloads/{files}")
-                    return True
+        sleep(20)
+        self.df = pd.read_excel(f"challenge.xlsx")
+        os.remove(f"challenge.xlsx")
 
-                elif files.startswith("challenge"):
-                    print("Waiting 10 seconds...")
-                    sleep(10)
-                    break
-
-                else:
-                    print("Waiting 10 seconds...")
-                    sleep(10)
-                    break
 
     def fullfilling_form(self):
         """
@@ -139,10 +136,3 @@ class ChallengeController:
 
         # Takes screenshot
         self.driver.save_screenshot("finished.png")
-
-
-app = ChallengeController("https://rpachallenge.com/")
-app.launch()
-app.donwload_file()
-app.read_file()
-app.fullfilling_form()
